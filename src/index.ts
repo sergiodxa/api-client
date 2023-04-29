@@ -1,51 +1,75 @@
-import type { ZodTypeAny } from "zod";
-
 import { z } from "zod";
 
 import { generatePath } from "./generate-path";
 import { parse, serialize } from "./json";
 
-export type EndpointOptions = {
-  params?: ZodTypeAny;
-  search?: ZodTypeAny;
-  body?: ZodTypeAny;
-  expects: { success: ZodTypeAny; failure?: ZodTypeAny };
+type ParseUrlParams<Url> = Url extends `${infer Path}(${infer OptionalPath})`
+  ? ParseUrlParams<Path> & Partial<ParseUrlParams<OptionalPath>>
+  : Url extends `${infer Start}/${infer Rest}`
+  ? ParseUrlParams<Start> & ParseUrlParams<Rest>
+  : Url extends `:${infer Param}`
+  ? { [K in Param]: string | number }
+  : {};
+
+type EndpointOptions = {
+  search?: z.ZodTypeAny;
+  body?: z.ZodTypeAny;
+  expects: { success: z.ZodTypeAny; failure?: z.ZodTypeAny };
 };
 
-export type EndpointsRecord = Record<string, EndpointOptions>;
+type EndpointsRecord = Record<string, EndpointOptions>;
 
-export type EndpointVariables<
+type EndpointVariables<
   Endpoints extends EndpointsRecord,
   Endpoint extends keyof Endpoints
-> = Pick<Endpoints[Endpoint], "params" | "search" | "body">;
+> = Pick<Endpoints[Endpoint], "search" | "body">;
 
-export type VariablesBody<
+export type EndpointParams<
   Endpoints extends EndpointsRecord,
   Endpoint extends keyof Endpoints
-> = EndpointVariables<Endpoints, Endpoint>["body"] extends z.ZodTypeAny
-  ? { body: z.input<EndpointVariables<Endpoints, Endpoint>["body"]> }
-  : {};
+> = {} extends ParseUrlParams<Endpoint> ? {} : ParseUrlParams<Endpoint>;
+
+export type EndpointSearch<
+  Endpoints extends EndpointsRecord,
+  Endpoint extends keyof Endpoints
+> = EndpointVariables<Endpoints, Endpoint>["search"] extends undefined
+  ? {}
+  : z.input<NonNullable<EndpointVariables<Endpoints, Endpoint>["search"]>>;
+
+export type EndpointBody<
+  Endpoints extends EndpointsRecord,
+  Endpoint extends keyof Endpoints
+> = EndpointVariables<Endpoints, Endpoint>["body"] extends undefined
+  ? {}
+  : z.input<NonNullable<EndpointVariables<Endpoints, Endpoint>["body"]>>;
 
 export type VariablesParams<
   Endpoints extends EndpointsRecord,
   Endpoint extends keyof Endpoints
-> = EndpointVariables<Endpoints, Endpoint>["params"] extends z.ZodTypeAny
-  ? { params: z.input<EndpointVariables<Endpoints, Endpoint>["params"]> }
-  : {};
+> = {} extends ParseUrlParams<Endpoint>
+  ? {}
+  : { params: EndpointParams<Endpoints, Endpoint> };
 
-export type VariablesSearch<
+type VariablesSearch<
   Endpoints extends EndpointsRecord,
   Endpoint extends keyof Endpoints
-> = EndpointVariables<Endpoints, Endpoint>["search"] extends z.ZodTypeAny
-  ? { search: z.input<EndpointVariables<Endpoints, Endpoint>["search"]> }
-  : {};
+> = {} extends EndpointSearch<Endpoints, Endpoint>
+  ? {}
+  : { search: EndpointSearch<Endpoints, Endpoint> };
+
+type VariablesBody<
+  Endpoints extends EndpointsRecord,
+  Endpoint extends keyof Endpoints
+> = {} extends EndpointBody<Endpoints, Endpoint>
+  ? {}
+  : { body: EndpointBody<Endpoints, Endpoint> };
 
 export type Variables<
   Endpoints extends EndpointsRecord,
   Endpoint extends keyof Endpoints
-> = VariablesBody<Endpoints, Endpoint> &
-  VariablesParams<Endpoints, Endpoint> &
-  VariablesSearch<Endpoints, Endpoint>;
+> = VariablesParams<Endpoints, Endpoint> &
+  VariablesSearch<Endpoints, Endpoint> &
+  VariablesBody<Endpoints, Endpoint>;
 
 export type HasVariables<
   Endpoints extends EndpointsRecord,
@@ -67,7 +91,9 @@ export type EndpointResult<
           status: "failure";
           code: number;
           data: Endpoint extends keyof Endpoints
-            ? z.output<Endpoints[Endpoint]["expects"]["failure"]>
+            ? Endpoints[Endpoint]["expects"]["failure"] extends z.ZodTypeAny
+              ? z.output<Endpoints[Endpoint]["expects"]["failure"]>
+              : never
             : never;
         }
   : z.output<Endpoints[Endpoint]["expects"]["success"]>;
@@ -87,9 +113,11 @@ export interface APIClientConfiguration<Endpoints extends EndpointsRecord> {
   baseURL: URL;
   endpoints: Endpoints;
   fetch?: Omit<RequestInit, "body" | "method">;
-  measure?: typeof measure;
+  measure?: Measurer;
   credentials?(options: { url: URL; headers: Headers; token?: string }): void;
 }
+
+export type Measurer = typeof measure;
 
 const RequestMethodSchema = z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 
@@ -99,17 +127,21 @@ export function createAPIClient<Endpoints extends EndpointsRecord>(
   return class APIClient {
     constructor(private token?: string) {}
 
+    static get endpoints() {
+      return configuration.endpoints;
+    }
+
     async request<Endpoint extends keyof Endpoints>(
       endpoint: Endpoint,
       options: RequestOptions<Endpoints, Endpoint>
     ): Promise<EndpointResult<Endpoints, Endpoint>> {
       if (typeof endpoint !== "string") {
-        throw new TypeError("Invalid endpoint.");
+        throw new TypeError("The endpoint must be a string.");
       }
 
       if (!(endpoint in configuration.endpoints)) {
         throw new ReferenceError(
-          `Missing endpoint "${endpoint}", did you forget to add it to the endpoints map?`
+          `Missing endpoint "${endpoint}". You can add it to your API client configuration.`
         );
       }
 
@@ -119,8 +151,8 @@ export function createAPIClient<Endpoints extends EndpointsRecord>(
 
       let url =
         "variables" in options && "params" in options.variables
-          ? await getURL(path, endpoint, options?.variables?.params)
-          : await getURL(path, endpoint);
+          ? await getURL<Endpoint>(path, options?.variables?.params)
+          : await getURL<Endpoint>(path);
 
       if ("variables" in options && "search" in options.variables) {
         url = await getSearchParams(endpoint, url, options.variables.search);
@@ -141,14 +173,21 @@ export function createAPIClient<Endpoints extends EndpointsRecord>(
         headers,
       };
 
-      if (options?.signal) init.signal = options.signal;
+      if (options?.signal) {
+        // Check if the signal is already aborted and stop there
+        if (options.signal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+
+        init.signal = options.signal;
+      }
 
       if (
         method !== "GET" &&
         "variables" in options &&
         "body" in options.variables
       ) {
-        init.body = getBody(endpoint, options.variables.body);
+        init.body = await getBody(endpoint, options.variables.body);
       }
 
       let measurer = configuration.measure ?? measure;
@@ -158,35 +197,50 @@ export function createAPIClient<Endpoints extends EndpointsRecord>(
 
         let response = await fetch(request);
 
-        let body = await response.text().then(parse);
+        // We only accept JSON response, if the Content-Type doesn't have `json`
+        // we throw an error and stop here the execution.
+        if (!response.headers.get("content-type")?.includes("json")) {
+          throw new TypeError(
+            `The endpoint "${endpoint}" returned a non-JSON response.`
+          );
+        }
 
-        let success = configuration.endpoints[endpoint].expects.success;
-        let failure = configuration.endpoints[endpoint].expects.failure;
+        let body = await response
+          .text()
+          .then(parse)
+          .catch(() => {
+            throw new Error(
+              `The endpoint "${endpoint}" returned an invalid JSON response.`
+            );
+          });
+
+        let SuccessSchema = configuration.endpoints[endpoint].expects.success;
+        let FailureSchema = configuration.endpoints[endpoint].expects.failure;
 
         if (response.status >= 200 && response.status < 300) {
-          if (!failure) return await success.parseAsync(body);
+          if (!FailureSchema) return await SuccessSchema.parseAsync(body);
           return {
             status: "success" as const,
-            data: await success.parseAsync(body),
+            data: await SuccessSchema.parseAsync(body),
           };
         }
 
         if (response.status >= 400 && response.status < 500) {
-          if (!failure) {
+          if (!FailureSchema) {
             throw new ReferenceError(
-              `Missing failure schema for endpoint "${endpoint}"`
+              `Missing "failure" schema for endpoint "${endpoint}".`
             );
           }
 
           return {
             status: "failure" as const,
-            data: await failure.parseAsync(body),
+            data: await FailureSchema.parseAsync(body),
             code: response.status,
           };
         }
 
         throw new Error(
-          `The endpoint ${endpoint} throw a ${response.status} code.`
+          `The endpoint "${endpoint}" throw a ${response.status} code.`
         );
       });
     }
@@ -194,21 +248,15 @@ export function createAPIClient<Endpoints extends EndpointsRecord>(
 
   async function getURL<Endpoint extends keyof Endpoints>(
     path: string,
-    endpoint: Endpoint,
-    options?: VariablesParams<Endpoints, Endpoint>
+    params?: EndpointParams<Endpoints, Endpoint>
   ) {
-    let route = configuration.endpoints[endpoint];
-    let params =
-      "params" in route && options
-        ? await route.params?.parseAsync(options)
-        : {};
     return new URL(generatePath(path, params).slice(1), configuration.baseURL);
   }
 
   async function getSearchParams<Endpoint extends keyof Endpoints>(
     endpoint: Endpoint,
     url: URL,
-    options: VariablesSearch<Endpoints, Endpoint>
+    options: EndpointSearch<Endpoints, Endpoint>
   ) {
     let route = configuration.endpoints[endpoint];
     if (!("search" in route)) return url;
@@ -249,12 +297,14 @@ export function createAPIClient<Endpoints extends EndpointsRecord>(
     return url;
   }
 
-  function getBody<Endpoint extends keyof Endpoints>(
+  async function getBody<Endpoint extends keyof Endpoints>(
     endpoint: Endpoint,
-    options: VariablesBody<Endpoints, Endpoint>
+    options: EndpointBody<Endpoints, Endpoint>
   ) {
     let route = configuration.endpoints[endpoint];
-    if ("body" in route) return serialize(route.body?.parseAsync(options));
+    if ("body" in route) {
+      return serialize(await route.body?.parseAsync(options));
+    }
     return;
   }
 }
