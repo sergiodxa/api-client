@@ -1,6 +1,17 @@
 # createAPIClient
 
-> A strongly typed API client using Zod
+## Features
+
+- Completely type-safe
+- Automatic route params
+- Typed search and body params with Zod
+- Typed responses with Zod
+- Automatic error handling
+- Automatic JSON parsing
+- AbortController/AbortSignal built-in support
+- Customizable fetch options
+- Customizable performance measuring
+- Customizable credentials handling
 
 ## Install
 
@@ -17,16 +28,16 @@ import { createAPIClient } from "@sergiodxa/api-client";
 import { z } from "zod";
 ```
 
-Then create a new API client, there are two required parameters:
+Then create a new API client. There are two required parameters:
 
-- `baseURL` which is a URL object
+- `baseURL`, which is a URL object
 - `endpoints` which is an object with the endpoints the API supports
 
 And the following parameters are optional:
 
-- `fetch` which are all `RequestInit` options supported by `fetch` except `body` and `method`, these will be added to every request.
-- `measure` which is a function used to measure the perfomance of the request, it receives the endpoint and an async function that will be the one doing the request and parsing the response. The default function will do a simple `console.log` with the message `[API] GET /users took 50ms` where `GET /users` is the endpoint and `50ms` is the time it took to do the request, a custom function can be used to avoid the logs or customize the usage.
-- `credentials` is a function that receives an object with the `URL` and `Headers` instances that will be used by the request, and an optional `token`, this method can be used to attach such token to the URL or headers before the request is sent based on the API requirements.
+- `fetch`, all `RequestInit` options supported by `fetch` except `body` and `method`. Every request will have these options.
+- `measure` is a function used to measure the performance of the request. It receives the endpoint and an async function that performs the request and parses the response. The default function will do a simple `console.log` with the message `[API] GET /users took 50ms` where `GET /users` is the endpoint and `50ms` is the time it took to fetch the endpoint. You can use it to remove the logs or customize the usage.
+- `credentials` is a function that receives an object with the `URL` and `Headers` instances that the request will use and an optional `token`. Use this method to attach that token to the URL or headers before sending the request based on the API requirements.
 
 ```ts
 let APIClient = createAPIClient({
@@ -47,13 +58,13 @@ let APIClient = createAPIClient({
 });
 ```
 
-Once you have you APIClient class (feel free to use another name) you can create a new instance:
+Once you have your APIClient class (feel free to use another name), you can create a new instance:
 
 ```ts
 let client = new APIClient();
 ```
 
-> **Note** there's a single optional `token` string parameter accepted by the constructor, this token will be passed to the `credentials` function if provided.
+> **Note**: The constructor accepts a single optional `token` string parameter. This token will be passed to the `credentials` function if provided.
 
 Finally, use `client.request` method to call your different endpoints.
 
@@ -61,19 +72,19 @@ Finally, use `client.request` method to call your different endpoints.
 const users = await client.request("GET /users", {}); // second argument always required, working on that
 ```
 
-The `client.request` method receives the endpoint as `METHOD /path` and an object with extra options which can be:
+The `client.request` method receives the endpoint as `METHOD /path` and an object with extra options, which can be:
 
-- `variables` which is an object with the variables the endpoint needs, this includes route params, search params and the body for non-GET requests.
-- `headers` which is a `HeadersInit` object with the headers you want to apply to your request.
-- `signal` which is an `AbortSignal` instance that can be used to abort the request.
+- `variables` is an object with the variables the endpoint needs. The route params, search params, and the body for non-GET requests are part of the `variables`.
+- `headers`, is a `HeadersInit` object with the headers you want to apply to your request.
+- `signal` , is an `AbortSignal` instance you can use to abort the request.
 
-The reesult of `client.request` will depend on the endpoint configuration, if the endpoint doesn't have a `failure` schema the result will be the output of the `success` schema.
+The `client.request` result will depend on the endpoint configuration. If the endpoint doesn't have a `failure` schema, the result will be the output of the `success` schema.
 
-If the endpoint does have a `failure` schema then the result will be a `Result` object with the following properties:
+If the endpoint does have a `failure` schema, then the result will be a `Result` object with the following properties:
 
-- `status` which is a string with the status of the request, it can be `success` or `failure`.
-- `data` which is the output of the `success` schema.
-- `code` which is the HTTP status code of the response, only on `failure`.
+- `status`, is a string with the result's status. It can be `success` or `failure`.
+- `data`, is the output of the `success` schema.
+- `code`, is the HTTP status code of the response, only on `failure`.
 
 ```ts
 const userResult = await client.request("GET /users/:userId", {
@@ -94,11 +105,11 @@ In case the response is a 4xx, and there's no `failure` schema, then `client.req
 
 In case the response is a 5xx, then `client.request` will throw an error with the message `The endpoint "GET /users" throw a 500 code.` where `GET /users` is the endpoint that failed and `500` is the status code of the response.
 
-In case the response is not a JSON one, then `client.request` will throw an error with the message `The endpoint "GET /users" returned a non-JSON response.` where `GET /users` is the endpoint that failed. This is determined by the response Content-Type header which must include `json`, this means `application/json` or `application/json; charset=utf-8` and other variants are all valid.
+If the response is not JSON, then `client.request` will throw an error with the message `The endpoint "GET /users" returned a non-JSON response.` where `GET /users` is the endpoint that failed. The response Content-Type header determines whether the response is considered a JSON. It must include `json`, which means `application/json` or `application/json; charset=utf-8`, and other variants are all valid.
 
-In case the response has the Content-Type header but it's not really a JSON one, it will fail when trying to parse it, in such case `client.request` will throw an error with the message `The endpoint "GET /users" returned an invalid JSON response.` where `GET /users` is the endpoint that failed.
+In case the response has the Content-Type header but it's not a JSON one, it will fail when trying to parse it, such case `client.request` will throw an error with the message `The endpoint "GET /users" returned an invalid JSON response.` where `GET /users` is the endpoint that failed.
 
-When defining endpoints, an endpoint can have route params, search params, body params and the expected response results.
+When defining endpoints, an endpoint can have route params, search params, body params, and the expected response results.
 
 ```ts
 const endpoints = {
@@ -124,9 +135,9 @@ const endpoints = {
 };
 ```
 
-The `search` schema is used to validate the search params, the `body` schema is used to validate the body of non-GET requests, and the `expected` schema is used to validate the response.
+The `search` schema validates the search parameters. The `body` schema validates the body of non-GET requests, and the `expected` schema validates the response.
 
-The route params are automatically inferred from the endpoint path, in the example above `:userId` is a route param so you will have to use that endpoint like this:
+There's automatic inference of route parameters from the endpoint path. In the example above, `:userId` is a route param, so you will have to use that endpoint like this:
 
 ```ts
 await client.request("GET /users/:userId", {
@@ -134,22 +145,22 @@ await client.request("GET /users/:userId", {
 });
 ```
 
-In this case all route params are typed as `string | number`.
+All route params are typed as `string | number` in this case.
 
-The `search` params can be almost anything, but since not anything is supported by URLSearchParams there are a few considerations based on the type:
+The `search` params can be almost anything, but since URLSearchParams doesn't support everything there are a few considerations based on the type:
 
-- strings is used as is
+- strings are used as is
 - booleans and numbers are converted to strings using `String(value)`
-- arrays are iterate and added with `searchParams.append` sharing the same key, values are converted to strings using `String(value)`, e.g. `[1, 2, 3]` for the key `id` will be `?id=1&id=2&id=3`
+- arrays are iterated and added with `searchParams.append` sharing the same key, the values are converted to strings using `String(value)`, e.g. `[1, 2, 3]` for the key `id` will be `?id=1&id=2&id=3`
 - objects are added like `?param[key]=value`, values are converted to strings using `String(value)`, e.g. `{ color: "red", quantity: 1 }` for the key `filter` will be `?filter[color]=red&filter[quantity]=1`.
 
-Any other type of vaue is ignored.
+Any other type of value will be ignored.
 
-The `body` params needs to be JSON compatible since the value will be converted with `JSON.stringify`.
+The `body` params must be JSON compatible.
 
 > **Note**: Support for file uploads may come in the future.
 
-If you don't want to use `client.request(endpoint)` you can extend and provide your own methods:
+If you don't want to use `client.request(endpoint)` you can extend and provide your methods:
 
 ```ts
 let BaseAPIClient = createAPIClient({
@@ -182,7 +193,7 @@ class APIClient extends BaseAPIClient {
 }
 ```
 
-And then use your custom class as API client.
+And then use your custom class as an API client.
 
 ```ts
 let client = new APIClient();
