@@ -1,0 +1,34 @@
+{
+  "name": "api-client",
+  "version": "1.0.0",
+  "description": "A strongly typed API client using Zod",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest",
+    "coverage": "vitest --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sergiodxa/api-client.git"
+  },
+  "keywords": [],
+  "author": "Sergio Xalambrí <hello@sergiodxa.com> (https://sergiodxa.com/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sergiodxa/api-client/issues"
+  },
+  "homepage": "https://github.com/sergiodxa/api-client#readme",
+  "dependencies": {
+    "inflected": "^2.1.0",
+    "zod": "^3.21.4"
+  },
+  "devDependencies": {
+    "@types/inflected": "^1.1.29",
+    "@vitest/coverage-c8": "^0.30.1",
+    "happy-dom": "^9.10.0",
+    "msw": "^1.2.1",
+    "typescript": "^5.0.4",
+    "vitest": "^0.30.1"
+  }
+}
