@@ -2,6 +2,7 @@ import {
   afterAll,
   afterEach,
   beforeAll,
+  beforeEach,
   describe,
   expect,
   test,
@@ -22,21 +23,32 @@ describe(createAPIClient.name, () => {
     })
   );
 
+  let logger = vi.spyOn(console, "log");
+
   beforeAll(() => {
     server.listen();
   });
 
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    logger.mockImplementation(() => {});
+    vi.useFakeTimers();
+  });
+
   afterEach(() => {
+    vi.useRealTimers();
+    logger.mockReset();
+
     server.resetHandlers();
   });
 
   afterAll(() => {
+    logger.mockClear();
     server.close();
   });
 
   test("creates a new API client", () => {
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("https://example.com"),
       endpoints: {},
     });
@@ -50,7 +62,6 @@ describe(createAPIClient.name, () => {
 
   test("defines endpoints", () => {
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("https://example.com"),
       endpoints: { "GET /users": { expects: { success: z.string() } } },
     });
@@ -104,7 +115,6 @@ describe(createAPIClient.name, () => {
     let controller = new AbortController();
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("https://example.com"),
       endpoints: { "GET /users": { expects: { success: z.string() } } },
     });
@@ -127,7 +137,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users": {
@@ -151,7 +160,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users": {
@@ -175,7 +183,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users": {
@@ -202,7 +209,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users": {
@@ -220,7 +226,6 @@ describe(createAPIClient.name, () => {
 
   test("throw if the requested endpoint is not a string", async () => {
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users": {
@@ -239,7 +244,6 @@ describe(createAPIClient.name, () => {
 
   test("throw if the requested endpoint is not defined", async () => {
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users": {
@@ -264,7 +268,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users": {
@@ -292,7 +295,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       credentials({ url, token }) {
         if (token) url.searchParams.set("token", token);
@@ -318,7 +320,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       credentials({ headers, token }) {
         if (token) headers.set("Authorization", token);
@@ -343,7 +344,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users": {
@@ -367,7 +367,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users/:userId": {
@@ -394,7 +393,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users": {
@@ -440,7 +438,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "POST /users": {
@@ -467,7 +464,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       fetch: { headers: { "X-Client": "MyClient" } },
       endpoints: {
@@ -496,7 +492,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users/:userId": {
@@ -534,10 +529,6 @@ describe(createAPIClient.name, () => {
       })
     );
 
-    vi.useFakeTimers();
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    let logger = vi.spyOn(console, "log").mockImplementationOnce(() => {});
-
     let Client = createAPIClient({
       baseURL: new URL("http://example.com"),
       endpoints: {
@@ -552,9 +543,6 @@ describe(createAPIClient.name, () => {
 
     expect(logger).toHaveBeenCalledTimes(1);
     expect(logger).toHaveBeenCalledWith("[API] GET /users took 0ms");
-
-    logger.mockClear();
-    vi.useRealTimers();
   });
 
   test("uses custom measure function", async () => {
@@ -597,7 +585,6 @@ describe(createAPIClient.name, () => {
     );
 
     let Client = createAPIClient({
-      measure: (_, fn) => fn(),
       baseURL: new URL("http://example.com"),
       endpoints: {
         "GET /users": {
@@ -607,13 +594,13 @@ describe(createAPIClient.name, () => {
     });
 
     class CustomClient extends Client {
-      async getUsers() {
+      async fetchUsers() {
         return this.request("GET /users", {});
       }
     }
 
     let client = new CustomClient();
 
-    await expect(client.getUsers()).resolves.toEqual([{ name: "Sergio" }]);
+    await expect(client.fetchUsers()).resolves.toEqual([{ name: "Sergio" }]);
   });
 });
