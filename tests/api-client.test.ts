@@ -12,7 +12,7 @@ import { z } from "zod";
 import { setupServer } from "msw/node";
 import { rest } from "msw";
 
-// @ts-expect-error
+// @ts-expect-error We're using this to simulate a location object
 window.location = new URL("https://example.com");
 
 describe(createAPIClient.name, () => {
@@ -535,6 +535,7 @@ describe(createAPIClient.name, () => {
     );
 
     vi.useFakeTimers();
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     let logger = vi.spyOn(console, "log").mockImplementationOnce(() => {});
 
     let Client = createAPIClient({
@@ -554,5 +555,65 @@ describe(createAPIClient.name, () => {
 
     logger.mockClear();
     vi.useRealTimers();
+  });
+
+  test("uses custom measure function", async () => {
+    server.use(
+      rest.get("http://example.com/users", (_, res, ctx) => {
+        return res.once(ctx.json([{ name: "Sergio" }]));
+      })
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    let logger = vi.spyOn(console, "log").mockImplementationOnce(() => {});
+
+    let Client = createAPIClient({
+      measure: (name, fn) => {
+        console.log(`[API] ${name} took 100ms`);
+        return fn();
+      },
+      baseURL: new URL("http://example.com"),
+      endpoints: {
+        "GET /users": {
+          expects: { success: z.object({ name: z.string() }).array() },
+        },
+      },
+    });
+
+    let client = new Client();
+    await client.request("GET /users", {});
+
+    expect(logger).toHaveBeenCalledTimes(1);
+    expect(logger).toHaveBeenCalledWith("[API] GET /users took 100ms");
+
+    logger.mockClear();
+  });
+
+  test("can extend client class", async () => {
+    server.use(
+      rest.get("http://example.com/users", (_, res, ctx) => {
+        return res.once(ctx.json([{ name: "Sergio" }]));
+      })
+    );
+
+    let Client = createAPIClient({
+      measure: (_, fn) => fn(),
+      baseURL: new URL("http://example.com"),
+      endpoints: {
+        "GET /users": {
+          expects: { success: z.object({ name: z.string() }).array() },
+        },
+      },
+    });
+
+    class CustomClient extends Client {
+      async getUsers() {
+        return this.request("GET /users", {});
+      }
+    }
+
+    let client = new CustomClient();
+
+    await expect(client.getUsers()).resolves.toEqual([{ name: "Sergio" }]);
   });
 });
