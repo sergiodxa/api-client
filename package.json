@@ -4,9 +4,20 @@
   "description": "A strongly typed API client using Zod",
   "main": "index.js",
   "scripts": {
+    "build": "npm run build:browser && npm run build:main",
+    "build:browser": "tsc --module ESNext --outDir ./browser",
+    "build:main": "tsc --module CommonJS --outDir ./build",
     "test": "vitest",
     "coverage": "vitest --coverage",
     "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./build/index.d.ts",
+      "import": "./browser/index.js",
+      "require": "./build/index.js"
+    }
   },
   "repository": {
     "type": "git",

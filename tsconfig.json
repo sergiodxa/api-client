@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2019"],
-    "isolatedModules": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Node",
     "target": "ES2019",
     "strict": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
-  }
+    "declaration": true,
+    "jsx": "react-jsx",
+    "outDir": "./build"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

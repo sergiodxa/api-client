@@ -121,11 +121,17 @@ export type Measurer = typeof measure;
 
 const RequestMethodSchema = z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 
+export type APIClient = InstanceType<ReturnType<typeof createAPIClient>>;
+
 export function createAPIClient<Endpoints extends EndpointsRecord>(
   configuration: APIClientConfiguration<Endpoints>
 ) {
   return class APIClient {
-    constructor(private token?: string) {}
+    #token?: string;
+
+    constructor(token?: string) {
+      this.#token = token;
+    }
 
     static get endpoints() {
       return configuration.endpoints;
@@ -164,7 +170,7 @@ export function createAPIClient<Endpoints extends EndpointsRecord>(
       );
 
       if (configuration.credentials) {
-        configuration.credentials({ url, headers, token: this.token });
+        configuration.credentials({ url, headers, token: this.#token });
       }
 
       let init: RequestInit = {
