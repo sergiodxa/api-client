@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Copied from @remix-run/router
  * @see https://github.com/remix-run/react-router/blob/24f80acb846299b4ef6b9176583d836009a494db/packages/router/utils.ts#L694
@@ -101,7 +102,7 @@ function invariant<T>(
   message?: string
 ): asserts value is T;
 function invariant(value: any, message?: string) {
-  if (value === false || value === null || typeof value === "undefined") {
+  if (value === false || value === null || value === undefined) {
     throw new Error(message);
   }
 }

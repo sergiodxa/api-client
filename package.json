@@ -9,7 +9,8 @@
     "build:main": "tsc --module CommonJS --outDir ./build",
     "test": "vitest",
     "coverage": "vitest --coverage",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --ext .ts,.tsx src/"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -36,9 +37,21 @@
   },
   "devDependencies": {
     "@types/inflected": "^1.1.29",
+    "@typescript-eslint/eslint-plugin": "^5.44.0",
+    "@typescript-eslint/parser": "^5.44.0",
     "@vitest/coverage-c8": "^0.30.1",
+    "eslint": "^8.28.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-cypress": "^2.12.1",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jest-dom": "^4.0.3",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-testing-library": "^5.9.1",
+    "eslint-plugin-unicorn": "^45.0.0",
     "happy-dom": "^9.10.0",
     "msw": "^1.2.1",
+    "prettier": "^2.8.8",
     "typescript": "^5.0.4",
     "vitest": "^0.30.1"
   }
