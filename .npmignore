@@ -1,0 +1,8 @@
+/.github
+/src
+/tests
+.eslintrc.js
+.gitignore
+.npmignore
+.npmrc
+tsconfig.json
