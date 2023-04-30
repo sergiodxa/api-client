@@ -1,6 +1,6 @@
 {
   "name": "@sergiodxa/api-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A strongly typed API client using Zod",
   "browser": "./browser/index.js",
   "main": "./build/index.js",
