@@ -2,7 +2,9 @@
   "name": "@sergiodxa/api-client",
   "version": "1.0.0",
   "description": "A strongly typed API client using Zod",
-  "main": "index.js",
+  "browser": "./browser/index.js",
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
   "scripts": {
     "build": "npm run build:browser && npm run build:main",
     "build:browser": "tsc --module ESNext --outDir ./browser",
