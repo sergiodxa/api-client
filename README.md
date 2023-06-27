@@ -44,12 +44,12 @@ let APIClient = createAPIClient({
   baseURL: "https://api.example.com",
   endpoints: {
     "GET /users": {
-      expected: {
+      expects: {
         success: z.object({ id: z.string(), name: z.string() }).array(),
       },
     },
     "GET /users/:userId": {
-      expected: {
+      expects: {
         success: z.object({ id: z.string(), name: z.string() }),
         failure: z.object({ error: z.string() }),
       },
@@ -115,19 +115,19 @@ When defining endpoints, an endpoint can have route params, search params, body 
 const endpoints = {
   "GET /users": {
     search: z.object({ page: z.number() }),
-    expected: {
+    expects: {
       success: z.object({ id: z.number() }).array(),
     },
   },
   "POST /users": {
     body: z.object({ name: z.string() }),
-    expected: {
+    expects: {
       success: z.object({ id: z.number() }),
       failure: z.object({ error: z.string() }),
     },
   },
   "GET /users/:userId": {
-    expected: {
+    expects: {
       success: z.object({ id: z.number() }),
       failure: z.object({ error: z.string() }),
     },
@@ -167,12 +167,12 @@ let BaseAPIClient = createAPIClient({
   baseURL: "https://api.example.com",
   endpoints: {
     "GET /users": {
-      expected: {
+      expects: {
         success: z.object({ id: z.string(), name: z.string() }).array(),
       },
     },
     "GET /users/:userId": {
-      expected: {
+      expects: {
         success: z.object({ id: z.string(), name: z.string() }),
         failure: z.object({ error: z.string() }),
       },
