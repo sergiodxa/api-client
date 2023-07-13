@@ -57,6 +57,9 @@ export function generatePath<Path extends string>(
   // ensure `/` is added at the beginning if the path is absolute
   const prefix = path.startsWith("/") ? "/" : "";
 
+  // ensure '/' is addded at the end if the path was declared so
+  const trailingSlash = path.endsWith('/') ? '/' : ''
+
   const segments = path
     .split(/\/+/)
     .map((segment, index, array) => {
@@ -93,7 +96,7 @@ export function generatePath<Path extends string>(
     // Remove empty segments
     .filter((segment) => !!segment);
 
-  return prefix + segments.join("/");
+  return prefix + segments.join("/") + trailingSlash;
 }
 
 function invariant(value: boolean, message?: string): asserts value;
