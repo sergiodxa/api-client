@@ -58,7 +58,7 @@ export function generatePath<Path extends string>(
   const prefix = path.startsWith("/") ? "/" : "";
 
   // ensure '/' is addded at the end if the path was declared so
-  const trailingSlash = path.endsWith('/') ? '/' : ''
+  const trailingSlash = path.endsWith("/") ? "/" : "";
 
   const segments = path
     .split(/\/+/)

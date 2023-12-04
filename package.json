@@ -3,26 +3,18 @@
   "version": "1.0.2",
   "description": "A strongly typed API client using Zod",
   "browser": "./browser/index.js",
-  "main": "./build/index.js",
-  "types": "./build/index.d.ts",
+  "main": "./dist/commonjs/index.js",
+  "types": "./dist/commonjs/index.d.ts",
+  "type": "module",
+  "sideEffects": false,
   "scripts": {
-    "build": "npm run build:browser && npm run build:main",
-    "build:browser": "tsc --module ESNext --outDir ./browser",
-    "build:main": "tsc --module CommonJS --outDir ./build",
+    "prepublishOnly": "npm run build",
+    "build": "tshy",
     "test": "vitest",
     "coverage": "vitest --coverage",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint --ext .ts,.tsx src/"
+    "lint": "eslint --ignore-path .gitignore --fix --no-error-on-unmatched-pattern ."
   },
-  "exports": {
-    "./package.json": "./package.json",
-    ".": {
-      "types": "./build/index.d.ts",
-      "import": "./browser/index.js",
-      "require": "./build/index.js"
-    }
-  },
-  "sideEffects": false,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sergiodxa/api-client.git"
@@ -35,7 +27,9 @@
   },
   "homepage": "https://github.com/sergiodxa/api-client#readme",
   "dependencies": {
-    "inflected": "^2.1.0",
+    "inflected": "^2.1.0"
+  },
+  "peerDependencies": {
     "zod": "^3.21.4"
   },
   "devDependencies": {
@@ -45,6 +39,7 @@
     "@vitest/coverage-c8": "^0.30.1",
     "eslint": "^8.28.0",
     "eslint-config-prettier": "^8.5.0",
+    "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-cypress": "^2.12.1",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-jest-dom": "^4.0.3",
@@ -55,7 +50,28 @@
     "happy-dom": "^9.10.0",
     "msw": "^1.2.1",
     "prettier": "^2.8.8",
+    "tshy": "^1.8.1",
     "typescript": "^5.0.4",
-    "vitest": "^0.30.1"
+    "vitest": "^0.30.1",
+    "zod": "^3.22.4"
+  },
+  "tshy": {
+    "exports": {
+      "./package.json": "./package.json",
+      ".": "./src/index.ts"
+    }
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/index.d.ts",
+        "default": "./dist/commonjs/index.js"
+      }
+    }
   }
 }

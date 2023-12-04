@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/ban-types */
 import { z } from "zod";
 
-import { generatePath } from "./generate-path";
-import { parse, serialize } from "./json";
+import { generatePath } from "./generate-path.js";
+import { parse, serialize } from "./json.js";
 
 type ParseUrlParams<Url> = Url extends `${infer Path}(${infer OptionalPath})`
   ? ParseUrlParams<Path> & Partial<ParseUrlParams<OptionalPath>>
